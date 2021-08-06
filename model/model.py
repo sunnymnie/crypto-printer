@@ -6,6 +6,7 @@ from strategy import Strategy
 
 class Model:
     def __init__(self, strats, min_trade_amt=20, max_slippage=0.1):
+        """inits a Model with a list of strategies, minimum trade amount in USDT, and max slippage in %"""
         self.strats = list(Strategy) #sorted with priority, strats[0] highest priority
         self.min_trade_amt = min_trade_amt
         self.max_slippage = max_slippage
@@ -50,21 +51,65 @@ class Model:
             raise ValueError(f'Amount to trade ({trade_amt}) below minimum amount ({self.min_trade_amt})')
         return trade_amt
         
-    def get_portfolio_value(self):
-        """gets the estimated net USDT value of entire portfolio"""
+    def get_portfolio_value(ima, btc_price):
+        """gets the estimated net USDT value of entire portfolio given isolated margin accounts
+        REQUIRES: Quote asset in USDT"""
         value = 0
         for strat in self.strats:
-            #🛑
-            #value += x
+            value += self.get_pair_value(ima, strat.a, btc_price)
+            value += self.get_pair_value(ima, strat.b, btc_price)
         return value
-    
-    def get_position_and_max_trade_value(self, strat):
+
+    def get_pair_value(ima, pair:str, btc_price):
+        """returns the total USDT value of the strat given pair. REQUIRES pair have USDT as quote. 
+        If strat does not exist or has non USDT as quote, returns 0"""
+        try:
+            strat_val = get_pair_from_ima(ima, pair)
+            quote_val = float(strat_val['baseAsset']['netAssetOfBtc']) * btc_price
+            usdt_val = float(strat_val['quoteAsset']['netAsset'])
+            total_val = quote_val + usdt_val
+            return total_val
+        except:
+            return 0.
+
+    def is_short(ima, pair:str):
+        """returns True if is short this asset (net asset of base is negative). False if asset doesn't exist"""
+        try: 
+            strat_val = get_pair_from_ima(ima, pair)
+            quote_val = float(strat_val['baseAsset']['netAssetOfBtc'])
+            return quote_val < 0
+        except:
+            return False
+
+    def get_pair_from_ima(ima, pair:str):
+        """returns dictionary of pair from isolated margin accounts list of dictionaries. 
+        REQUIRES pair has USDT as quote asset"""
+        return list(filter(lambda x: x["baseAsset"]["asset"] == pair[:-4], ima["assets"]))[0]
+
+    def get_position_and_max_trade_value(strat):
         """gets the current Position of the strat and the maximum value it can buy/short
         until it crosses over strat's maximum allocation"""
-        #🛑
-        # Calculation: sees if start's current assets above % portfolio allocated
-        # etc. 
-        return Position.NONE, 0
-        
-        
-        
+        ima = self.client.get_isolated_margin_account()
+        btc_price = bh.get_price(client, "BTCUSDT")
+        pv = get_portfolio_value(ima, btc_price)   #portfolio value
+        sv = self.get_pair_value(strat.a, btc_price) + self.get_pair_value(strat.b, btc_price) #Strat value
+        mta = (pv * strat.max_portfolio) - sv      #Max trade amount
+
+        position = None
+
+        if self.is_short(ima, strat.a):
+            if mta > self.min_trade_amt:
+                position = Position.B_PARTIAL
+            elif mta =< self.min_trade_amt:
+                position = Position.B
+        elif self.is_short(ima, strat.b):
+            if mta > self.min_trade_amt:
+                position = Position.A_PARTIAL
+            elif mta =< self.min_trade_amt:
+                position = Position.A
+        else:
+            position = Position.NONE
+
+        return position, max(0, mta)
+
+

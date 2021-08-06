@@ -7,7 +7,7 @@ class Downloader:
     
     PATH = "../data/model/"
     
-    def __init__(self, client, path):
+    def __init__(self):
         """Downloader, with path '../data/model/'"""
         self.client = bh.new_binance_client()
         

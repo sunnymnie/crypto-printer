@@ -27,8 +27,9 @@ class Model:
                         trade_amt = self.get_trade_amt(trade.long, trade.short, max_usdt_amt)
                         trader.go_long_short(trade.long, trade.short, trade_amt)
                     else: #liquidate
-                        trade_amt = self.get_trade_amt(trade.short, trade.long, max_usdt_amt)
-                        trader.liquidate(trade.long, trade.short, trade_amt)
+                        max_long = bh.get_order_book(self.client, trade.long, self.max_slippage, False, True)
+                        max_short = bh.get_order_book(self.client, trade.short, self.max_slippage, True, True)
+                        trader.liquidate(trade.long, trade.short, max_long, max_short, self.min_trade_amt)
                 except ValueError as e:
                     pass
                     
@@ -42,16 +43,32 @@ class Model:
 
               
     def get_trade_amt(self, long, short, max_usdt_amt):
-        """max trade to have slippage within maximum slippage. If below minimum
-        trade amount, throws exception"""
+        """max per-asset trade amount to have slippage within maximum slippage. 
+        If below minimum trade amount, throws exception"""
+
+        mta = max_usdt_amt/2
+        usdt_balance = bh.get_usdt_balance()/2
         max_long = bh.get_order_book(self.client, long, self.max_slippage, True, True)
         max_short = bh.get_order_book(self.client, short, self.max_slippage, False, True)
-        trade_amt = min(max_long, max_short, max_usdt_amt)
+        trade_amt = min(usdt_balance, max_long, max_short, mta)
+        self.assert_above_minimum_trade_amt(trade_amt)
+        return trade_amt
+    
+#     def get_max_liquidate_amt(self, long, short):
+#         """returns the max per-asset USDT amount to liquidate without exceeding max slippage.
+#         If below minimum trade amount, throws exception"""
+#         max_long = bh.get_order_book(self.client, long, self.max_slippage, True, True)
+#         max_short = bh.get_order_book(self.client, short, self.max_slippage, False, True)
+#         max_amt = min(max_long, max_short)
+#         self.assert_above_minimum_trade_amt(max_amt)
+#         return max_amt
+    
+    def assert_above_minimum_trade_amt(self, trade_amt):
+        """throws ValueError if less than minimum trade amount"""
         if trade_amt < self.min_trade_amt:
             raise ValueError(f'Amount to trade ({trade_amt}) below minimum amount ({self.min_trade_amt})')
-        return trade_amt
-        
-    def get_portfolio_value(ima, btc_price):
+    
+    def get_portfolio_value(self, ima, btc_price):
         """gets the estimated net USDT value of entire portfolio given isolated margin accounts
         REQUIRES: Quote asset in USDT"""
         value = 0
@@ -60,11 +77,11 @@ class Model:
             value += self.get_pair_value(ima, strat.b, btc_price)
         return value
 
-    def get_pair_value(ima, pair:str, btc_price):
+    def get_pair_value(self, ima, pair:str, btc_price):
         """returns the total USDT value of the strat given pair. REQUIRES pair have USDT as quote. 
         If strat does not exist or has non USDT as quote, returns 0"""
         try:
-            strat_val = get_pair_from_ima(ima, pair)
+            strat_val = self.get_pair_from_ima(ima, pair)
             quote_val = float(strat_val['baseAsset']['netAssetOfBtc']) * btc_price
             usdt_val = float(strat_val['quoteAsset']['netAsset'])
             total_val = quote_val + usdt_val
@@ -72,26 +89,26 @@ class Model:
         except:
             return 0.
 
-    def is_short(ima, pair:str):
+    def is_short(self, ima, pair:str):
         """returns True if is short this asset (net asset of base is negative). False if asset doesn't exist"""
         try: 
-            strat_val = get_pair_from_ima(ima, pair)
+            strat_val = self.get_pair_from_ima(ima, pair)
             quote_val = float(strat_val['baseAsset']['netAssetOfBtc'])
             return quote_val < 0
         except:
             return False
 
-    def get_pair_from_ima(ima, pair:str):
+    def get_pair_from_ima(self, ima, pair:str):
         """returns dictionary of pair from isolated margin accounts list of dictionaries. 
         REQUIRES pair has USDT as quote asset"""
         return list(filter(lambda x: x["baseAsset"]["asset"] == pair[:-4], ima["assets"]))[0]
 
-    def get_position_and_max_trade_value(strat):
+    def get_position_and_max_trade_value(self, strat):
         """gets the current Position of the strat and the maximum value it can buy/short
         until it crosses over strat's maximum allocation"""
         ima = self.client.get_isolated_margin_account()
         btc_price = bh.get_price(client, "BTCUSDT")
-        pv = get_portfolio_value(ima, btc_price)   #portfolio value
+        pv = self.get_portfolio_value(ima, btc_price)   #portfolio value
         sv = self.get_pair_value(strat.a, btc_price) + self.get_pair_value(strat.b, btc_price) #Strat value
         mta = (pv * strat.max_portfolio) - sv      #Max trade amount
 
@@ -100,12 +117,12 @@ class Model:
         if self.is_short(ima, strat.a):
             if mta > self.min_trade_amt:
                 position = Position.B_PARTIAL
-            elif mta =< self.min_trade_amt:
+            elif mta <= self.min_trade_amt:
                 position = Position.B
         elif self.is_short(ima, strat.b):
             if mta > self.min_trade_amt:
                 position = Position.A_PARTIAL
-            elif mta =< self.min_trade_amt:
+            elif mta <= self.min_trade_amt:
                 position = Position.A
         else:
             position = Position.NONE

@@ -29,28 +29,25 @@ class Strategy:
         self.update_data()
         self.z = self.m.get_z_score(self.df_a, self.df_b)
         trade = Trade(False)
-        if p == long.A or p == long.B:
-            trade = self.consider_liquidating()
-        elif p == long.A_PARTIAL or p == long.B_PARTIAL:
-            trade = self.consider_liquidating()
-            trade = self.consider_long_short() if not trade.to_trade else trade
-        else: #p == long.NONE
-            trade = self.consider_long_short()
+        
+        trade = self.consider_liquidating(p)
+        trade = self.consider_long_short(p) if not trade.to_trade else trade
+
         return trade
         
             
-    def consider_long_short():
+    def consider_long_short(p):
         """consider a long trade or a short trade"""
-        if self.z > self.thres:
+        if (self.z > self.thres) and (p == self.long.A_PARTIAL or p == self.long.NONE):
             return Trade(True, False, self.a, self.b)
-        elif self.z < -self.thres:
+        elif (self.z < -self.thres) and (p == self.long.B_PARTIAL or p == self.long.NONE):
             return Trade(True, False, self.b, self.a)
         return Trade(False)
     
-    def consider_liquidating():
-        if self.z < -self.sell_thres:
+    def consider_liquidating(p):
+        if (self.z < -self.sell_thres) and (p == self.long.A or p == self.long.A_PARTIAL):
             return Trade(True, True, self.a, self.b)
-        elif self.z > self.sell_thres:
+        elif (self.z > self.sell_thres) and (p == self.long.B or p == self.long.B_PARTIAL):
             return Trade(True, True, self.b, self.a)
         return Trade(False)
         

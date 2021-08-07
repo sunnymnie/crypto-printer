@@ -62,3 +62,10 @@ def new_binance_client():
 
     return Client(api_key=key("binance", "api"), api_secret=key("binance", "secret"))
 
+def get_usdt_balance():
+    """returns the USDT balance in spot as float"""
+    return float(client.get_asset_balance(asset='USDT')["free"])
+
+def get_decimal_place(pair:str):
+    """returns the number of decimal places orders can be in. Returns 0 if 0 decimal places, -1 for 10s, etc"""
+    return -int(np.log10(float(list(filter(lambda x: x['filterType'] == 'LOT_SIZE', client.get_symbol_info(pair)["filters"]))[0]['stepSize'])))

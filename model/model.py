@@ -2,18 +2,27 @@ import binance_helpers as bh
 from trader import Trader
 from trade import Position, Trade
 from strategy import Strategy
+import schedule
+import time
+
+from IPython.display import clear_output #TEMPORARY!!
+from datetime import datetime #TEMPORARY!!!!
+
+
 
 
 class Model:
     def __init__(self, strats, min_trade_amt=20, max_slippage=0.1):
         """inits a Model with a list of strategies, minimum trade amount in USDT, and max slippage in %"""
-        self.strats = list(Strategy) #sorted with priority, strats[0] highest priority
+        self.strats = strats #sorted with priority, strats[0] highest priority
         self.min_trade_amt = min_trade_amt
         self.max_slippage = max_slippage
         self.client = bh.new_binance_client()
         
     def update(self):
         """run and forget"""
+        print(f"Model: update")
+        clear_output() ########TEMPORARY##########TEMPORARY#########TEMPORARY####
         trader = Trader() #Need to init a new one because binance client 'expires'
         self.client = bh.new_binance_client()
         
@@ -36,16 +45,20 @@ class Model:
             strat.save_data()
             
     def turn_on(self):
-        #🛑
-        ## Using schedule, run `update` every minute
-        ## schedule.clear()
-        ## schedule.every().minute.at(":01").do(printer)
+        schedule.clear()
+        schedule.every().minute.at(":01").do(self.update)
+        while True:
+            schedule.run_pending()
+            now = datetime.now()
+            current_time = now.strftime("%H:%M:%S")
+            print("Current Time =", current_time)
+            time.sleep(1)
 
               
     def get_trade_amt(self, long, short, max_usdt_amt):
         """max per-asset trade amount to have slippage within maximum slippage. 
         If below minimum trade amount, throws exception"""
-
+        print(f"Model: get_trade_amt for long:{long}, short{short}, max_usdt_amt:{max_usdt_amt}")
         mta = max_usdt_amt/2
         usdt_balance = bh.get_usdt_balance()/2
         max_long = bh.get_order_book(self.client, long, self.max_slippage, True, True)
@@ -65,12 +78,14 @@ class Model:
     
     def assert_above_minimum_trade_amt(self, trade_amt):
         """throws ValueError if less than minimum trade amount"""
+        print(f"Model: assert_above_min_trade_amt w/ trade_amt {trade_amt}")
         if trade_amt < self.min_trade_amt:
             raise ValueError(f'Amount to trade ({trade_amt}) below minimum amount ({self.min_trade_amt})')
     
     def get_portfolio_value(self, ima, btc_price):
         """gets the estimated net USDT value of entire portfolio given isolated margin accounts
         REQUIRES: Quote asset in USDT"""
+        print(f"Model: get_portfolio_value with btc_price {btc_price} with # of strats: {len(self.strats)}")
         value = 0
         for strat in self.strats:
             value += self.get_pair_value(ima, strat.a, btc_price)
@@ -80,6 +95,7 @@ class Model:
     def get_pair_value(self, ima, pair:str, btc_price):
         """returns the total USDT value of the strat given pair. REQUIRES pair have USDT as quote. 
         If strat does not exist or has non USDT as quote, returns 0"""
+        print(f"Model: get_pair_value for pair:{pair}")
         try:
             strat_val = self.get_pair_from_ima(ima, pair)
             quote_val = float(strat_val['baseAsset']['netAssetOfBtc']) * btc_price
@@ -91,6 +107,7 @@ class Model:
 
     def is_short(self, ima, pair:str):
         """returns True if is short this asset (net asset of base is negative). False if asset doesn't exist"""
+        print(f"Model: is_short for pair: {pair}")
         try: 
             strat_val = self.get_pair_from_ima(ima, pair)
             quote_val = float(strat_val['baseAsset']['netAssetOfBtc'])
@@ -101,15 +118,17 @@ class Model:
     def get_pair_from_ima(self, ima, pair:str):
         """returns dictionary of pair from isolated margin accounts list of dictionaries. 
         REQUIRES pair has USDT as quote asset"""
+        print(f"Model: get_pair_from_ima for pair {pair}")
         return list(filter(lambda x: x["baseAsset"]["asset"] == pair[:-4], ima["assets"]))[0]
 
     def get_position_and_max_trade_value(self, strat):
         """gets the current Position of the strat and the maximum value it can buy/short
         until it crosses over strat's maximum allocation"""
+        print(f"Model: get_position_and_max_trade_value")
         ima = self.client.get_isolated_margin_account()
-        btc_price = bh.get_price(client, "BTCUSDT")
+        btc_price = bh.get_price(self.client, "BTCUSDT")
         pv = self.get_portfolio_value(ima, btc_price)   #portfolio value
-        sv = self.get_pair_value(strat.a, btc_price) + self.get_pair_value(strat.b, btc_price) #Strat value
+        sv = self.get_pair_value(ima, strat.a, btc_price) + self.get_pair_value(ima, strat.b, btc_price) #Strat value
         mta = (pv * strat.max_portfolio) - sv      #Max trade amount
 
         position = None

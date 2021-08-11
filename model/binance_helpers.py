@@ -6,6 +6,7 @@ from keys import key
 
 def get_order_book(client, pair:str, percent:float, buy:bool, usdt:bool):
     """Enter percent as .1 for 0.1%"""
+    print(f"BH: Getting orderbook for {pair}")
     ob = client.get_order_book(symbol=pair)
     bid = float(ob["bids"][0][0]) # Gets price of first bid
     ask = float(ob["asks"][0][0]) # Gets price of first ask (higher in price)
@@ -62,10 +63,10 @@ def new_binance_client():
 
     return Client(api_key=key("binance", "api"), api_secret=key("binance", "secret"))
 
-def get_usdt_balance():
+def get_usdt_balance(client):
     """returns the USDT balance in spot as float"""
     return float(client.get_asset_balance(asset='USDT')["free"])
 
-def get_decimal_place(pair:str):
+def get_decimal_place(client, pair:str):
     """returns the number of decimal places orders can be in. Returns 0 if 0 decimal places, -1 for 10s, etc"""
     return -int(np.log10(float(list(filter(lambda x: x['filterType'] == 'LOT_SIZE', client.get_symbol_info(pair)["filters"]))[0]['stepSize'])))

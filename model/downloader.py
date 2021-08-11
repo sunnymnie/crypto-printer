@@ -12,13 +12,14 @@ class Downloader:
         """Downloader, with path '../data/model/'"""
         self.client = bh.new_binance_client()
         
-    def get_minutely_data(self, pair:str):
-        """smartly downloads and returns minutely data. Enter pair with USDT"""
+    def get_minutely_data(self, pair:str, past=True):
+        """smartly downloads and returns minutely data. Enter pair with USDT. If past, returns what is saved,
+        else also updates it (without saving) and returns it"""
         print(f"DL: get_minutely_data for pair:{pair}")
         
         df_past = self.get_past_bars(pair)
 
-        return self.update_data(pair, df_past)
+        return df_past if past else self.update_data(pair, df_past)
         
 
     def update_data(self, pair:str, df_past):
@@ -79,7 +80,7 @@ class Downloader:
 
     def save_df_fast(self, pair, df, timestamp, buffer=10):
         """update saved df by writing only what it is missing minus buffer minutes"""
-        print(f"DL: save_df_fast for {pair}")
+        print(f"DL: save_df_fast for {pair} with timestamp {timestamp}, latest df timestamp {df.iloc[-1].timestamp}")
         df = df[df.timestamp > timestamp]
         df[:-buffer].to_csv(f"{self.PATH + pair}-past.csv", mode='a', header=False, index=False)
 

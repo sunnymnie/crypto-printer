@@ -16,7 +16,8 @@ class Strategy:
         
         self.df_a = self.dl.get_minutely_data(self.a)
         self.df_b = self.dl.get_minutely_data(self.b)
-        self.time_of_last_save = self.df_a.iloc[-1].timestamp
+        self.time_of_last_save_a = self.df_a.iloc[-1].timestamp
+        self.time_of_last_save_b = self.df_b.iloc[-1].timestamp
         self.z = self.m.get_z_score(self.df_a, self.df_b)
         
     def update_data(self):
@@ -58,9 +59,8 @@ class Strategy:
         
     def save_data(self):
         """saves dfs and sets time of last save"""
-        print(f"Strat: save_data")
-        last_save = self.dl.save_df_fast(self.a, self.df_a, self.time_of_last_save)
-        last_save = self.dl.save_df_fast(self.b, self.df_b, self.time_of_last_save)
-        self.time_of_last_save = last_save #Do not change this (watch out for using new last_save)
+        print(f"Strat: save_data, with last save {self.time_of_last_save_a}")
+        self.time_of_last_save_a = self.dl.save_df_fast(self.a, self.df_a, self.time_of_last_save_a)
+        self.time_of_last_save_b = self.dl.save_df_fast(self.b, self.df_b, self.time_of_last_save_b)
         
         

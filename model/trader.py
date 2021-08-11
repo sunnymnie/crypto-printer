@@ -7,7 +7,7 @@ class Trader:
         """inits a new trader that can fulfill trade obligations given by Model"""
         self.client = bh.new_binance_client()
         
-    def go_long_short(long, short, usdt_amt):
+    def go_long_short(self, long, short, usdt_amt):
         """places a market order to go long and takes a loan to go short"""
         print(f"Trader: go_long_short with long: {long}, short: {short}, usdt_amt: {usdt_amt}")
         # implementation
@@ -17,25 +17,25 @@ class Trader:
         
         usdt_amt = bh.binance_floor(0.99*usdt_amt, 6)
         
-        client.transfer_spot_to_isolated_margin(asset='USDT', symbol=long, amount=str(usdt_amt))
-        client.transfer_spot_to_isolated_margin(asset='USDT', symbol=short, amount=str(usdt_amt))
+#         self.client.transfer_spot_to_isolated_margin(asset='USDT', symbol=long, amount=str(usdt_amt))
+#         self.client.transfer_spot_to_isolated_margin(asset='USDT', symbol=short, amount=str(usdt_amt))
         
-        l_dp = bh.get_decimal_place(long)
-        s_dp = bh.get_decimal_place(short)
+        l_dp = bh.get_decimal_place(self.client, long)
+        s_dp = bh.get_decimal_place(self.client, short)
         
         l_asset_price = bh.get_price(self.client, long)
         s_asset_price = bh.get_price(self.client, short)
         
-        l_amt = bh.binance_floor(usdt_amt*0.97, l_dp)
-        s_amt = bh.binance_floor(usdt_amt*0.97, s_dp) 
+        l_amt = bh.binance_floor(usdt_amt*0.97/l_asset_price, l_dp)
+        s_amt = bh.binance_floor(usdt_amt*0.97/s_asset_price, s_dp) 
         
-        self.go_short(self, short, s_asset, s_amt)
-        self.go_long(self, long, l_asset, l_amt)
+        self.go_short(short, s_asset, s_amt)
+        self.go_long(long, l_asset, l_amt)
         
     def go_long(self, long, l_asset, amt):
         """goes long amt amount of long"""
         print(f"Trader: go_long {long} for amt {amt}")
-#         order = client.create_margin_order(
+#         order = self.client.create_margin_order(
 #             symbol=long,
 #             side=SIDE_BUY,
 #             type=ORDER_TYPE_MARKET,
@@ -48,8 +48,8 @@ class Trader:
     def go_short(self, short, s_asset, amt):
         """goes short amt amount of short"""
         print(f"Trader: go short {short} for amt {amt}")
-#         transaction = client.create_margin_loan(asset=s_asset, amount=str(amt), isIsolated='TRUE', symbol=short)
-#         order = client.create_margin_order(
+#         transaction = self.client.create_margin_loan(asset=s_asset, amount=str(amt), isIsolated='TRUE', symbol=short)
+#         order = self.client.create_margin_order(
 #             symbol=short,
 #             side=SIDE_SELL,
 #             type=ORDER_TYPE_MARKET,
@@ -61,7 +61,7 @@ class Trader:
 
     
         
-    def liquidate(long, short, max_long, max_short, min_trade_amt):
+    def liquidate(self, long, short, max_long, max_short, min_trade_amt):
         """liquidates current long and short position but under max_usdt_amt. If remaining 
         short position or long position is less than min_trade_amt, liquidate function ignores max_usdt_amt
         and liquidates all"""
@@ -72,11 +72,11 @@ class Trader:
         l_asset_price = bh.get_price(self.client, long)
         s_asset_price = bh.get_price(self.client, short)
         
-        l_dp = bh.get_decimal_place(long)
-        s_dp = bh.get_decimal_place(short)
+        l_dp = bh.get_decimal_place(self.client, long)
+        s_dp = bh.get_decimal_place(self.client, short)
         
-        l_amt_base = bh.binance_floor(float(get_margin_asset(l_asset)["free"]), l_dp)
-        s_amt_base = bh.binance_ceil(abs(float(get_margin_asset(s_asset)["netAsset"])), s_dp) #Positive
+        l_amt_base = bh.binance_floor(float(bh.get_margin_asset(self.client, l_asset)["free"]), l_dp)
+        s_amt_base = bh.binance_ceil(abs(float(bh.get_margin_asset(self.client, s_asset)["netAsset"])), s_dp) #Positive
         
         l_usdt_amt = l_amt_base * l_asset_price
         s_usdt_amt = s_amt_base * s_asset_price
@@ -87,7 +87,7 @@ class Trader:
         r_pct = max((1.-max_pct), 0.) # % of portfolio left if sold max_pct for both
         
         
-        l_amt = bh.binance_floor(max_pct*l_usdt_amt, l_dp) #long position to sell
+        l_amt = bh.binance_floor(max_pct*l_usdt_amt, l_dp) #long position to sell ##########ARE YOU SURE NOT division???????? OR NOT L_AMT INSTEAD OF L_USDT_AMT GIVEN WANT RESULT IN VOLATILE ASSET?
         l_r_amt = r_pct*l_usdt_amt #long position remaining
         s_amt = bh.binance_ceil(max_pct*s_usdt_amt, s_dp) #long position to sell
         s_r_amt = r_pct*s_usdt_amt #long position remaining
@@ -149,7 +149,7 @@ class Trader:
     def repay_loan(self, short, s_asset):
         """repays loan"""
         print(f"Trader: repay loan for short {short}")
-#         rp = str(abs(float(bh.get_margin_asset(short)["free"])))
+#         rp = str(abs(float(bh.get_margin_asset(self.client, short)["free"])))
 #         transaction = self.client.repay_margin_loan(asset=s_asset, amount=rp, isIsolated='TRUE', symbol=short)
 #         return transaction
         print(f"Repaid loan from {short} with asset {s_asset}")

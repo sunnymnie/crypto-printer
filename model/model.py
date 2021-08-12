@@ -36,16 +36,9 @@ class Model:
                 print(f"STRAT IS TO-TRADE")  
                 try:
                     if not trade.liquidate: #buy or sell
-#                         print(f"STRAT IS TO-BUY")  
-#                         trade_amt = self.get_trade_amt(trade.long, trade.short, max_usdt_amt)
-#                         trader.go_long_short(trade.long, trade.short, trade_amt)
-                        
-                        
-                        print(f"STRAT IS TO-LIQUIDATE")   ####DELETE#####DELETE
-                        max_long = bh.get_order_book(self.client, trade.long, self.max_slippage, False, True)
-                        max_short = bh.get_order_book(self.client, trade.short, self.max_slippage, True, True)
-                        trader.liquidate(trade.long, trade.short, max_long, max_short, self.min_trade_amt)
-                        
+                        print(f"STRAT IS TO-BUY")  
+                        trade_amt = self.get_trade_amt(trade.long, trade.short, max_usdt_amt)
+                        trader.go_long_short(trade.long, trade.short, trade_amt)
                         
                     else: #liquidate
                         print(f"STRAT IS TO-LIQUIDATE")  

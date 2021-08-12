@@ -24,8 +24,8 @@ class Magic:
         spread["std"] = spread.spread.rolling(self.lookback).std()
         spread["zscore"] = pd.Series((spread["spread"]-spread["mean"])/spread["std"])
         print(f"NON-NAN ZSCORE IS: {self.get_non_nan_zscore(spread)}")
-#         return self.get_non_nan_zscore(spread)
-        return 0.
+        return self.get_non_nan_zscore(spread)
+#         return 9.
     
     
     def get_non_nan_zscore(self, spread):

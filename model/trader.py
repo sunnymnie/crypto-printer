@@ -81,22 +81,25 @@ class Trader:
         l_usdt_amt = l_amt_base * l_asset_price
         s_usdt_amt = s_amt_base * s_asset_price
         
-        l_pct = max_long/l_usdt_amt  # % of long position you can sell
-        s_pct = max_short/s_usdt_amt # % of short position you can sell
-        max_pct = min(l_pct, s_pct)  # max % to sell for both assets
-        r_pct = max((1.-max_pct), 0.) # % of portfolio left if sold max_pct for both
+        l_pct = min(max_long/l_usdt_amt, 1)  # % of long position you can sell
+        s_pct = min(max_short/s_usdt_amt, 1) # % of short position you can sell
+        max_pct = min(l_pct, s_pct)          # max % to sell for both assets
+        r_pct = 1-max_pct                   # % of portfolio left if sold max_pct for both
         
         
-        l_amt = bh.binance_floor(max_pct*l_usdt_amt, l_dp) #long position to sell ##########ARE YOU SURE NOT division???????? OR NOT L_AMT INSTEAD OF L_USDT_AMT GIVEN WANT RESULT IN VOLATILE ASSET?
+        l_amt = max_pct*l_usdt_amt #long position to sell 
         l_r_amt = r_pct*l_usdt_amt #long position remaining
-        s_amt = bh.binance_ceil(max_pct*s_usdt_amt, s_dp) #long position to sell
+        s_amt = max_pct*s_usdt_amt #long position to sell
         s_r_amt = r_pct*s_usdt_amt #long position remaining
+        
+        
         
         sell_all = False
         
         if (l_amt > min_trade_amt) and (l_r_amt > min_trade_amt):
             #sell that much long position
-            self.liquidate_long_position(long, l_amt)
+            l_amt_to_sell = bh.binance_floor(max_pct*l_amt_base, l_dp)
+            self.liquidate_long_position(long, l_amt_to_sell)
         elif (l_r_amt > min_trade_amt): # $100 left but current max of buying $5, sell $20
             self.liquidate_long_position(long, bh.binance_floor(min_trade_amt/l_asset_price, l_dp))
         else: #only $30 left, sell $10, or sell $25
@@ -105,7 +108,8 @@ class Trader:
             
         if (s_amt > min_trade_amt) and (s_r_amt > min_trade_amt):
             #sell that much long position
-            self.liquidate_short_position(short, s_asset, s_amt)
+            s_amt_to_buy = bh.binance_ceil(max_pct*s_amt_base, s_dp)
+            self.liquidate_short_position(short, s_asset, s_amt_to_buy)
         elif (s_r_amt > min_trade_amt): # $100 left but current max of buying $5, sell $20
             self.liquidate_short_position(short, s_asset, bh.binance_floor(min_trade_amt/s_asset_price, s_dp))
         elif sell_all: #only $30 left, sell $10, or sell $25
@@ -115,9 +119,7 @@ class Trader:
             self.liquidate_short_position(short, s_asset, s_amt_base)
             
         self.repay_loan(short, s_asset)
-        
-        if sell_all:
-            self.move_money_to_spot(self, long, short, l_asset, s_asset)
+        self.move_money_to_spot(self, long, short, l_asset, s_asset)
 
         
     def liquidate_long_position(self, pair, amt):
@@ -149,19 +151,25 @@ class Trader:
     def repay_loan(self, short, s_asset):
         """repays loan"""
         print(f"Trader: repay loan for short {short}")
-#         rp = str(abs(float(bh.get_margin_asset(self.client, short)["free"])))
-#         transaction = self.client.repay_margin_loan(asset=s_asset, amount=rp, isIsolated='TRUE', symbol=short)
-#         return transaction
-        print(f"Repaid loan from {short} with asset {s_asset}")
+        
+        rp = str(abs(float(bh.get_margin_asset(self.client, short)["free"])))
+        
+        if float(rp)>0:
+            transaction = self.client.repay_margin_loan(asset=s_asset, amount=rp, isIsolated='TRUE', symbol=short)
+            return transaction
+    
+            print(f"Repaid loan from {short} with asset {s_asset}")
         
     def move_money_to_spot(self, long, short, l_asset, s_asset):
         """moves all money to spot. Assumes finished closing out of trade"""
         print(f"Trader: move_money_to_spot for long {long}, short{short}")
-#         l_usdt = str(bh.binance_floor(float(get_isolated_margin_account(l_asset)["quoteAsset"]["free"]), 6))
-#         s_usdt = str(bh.binance_floor(float(get_isolated_margin_account(s_asset)["quoteAsset"]["free"]), 6))
+        l_usdt = str(bh.binance_floor(float(get_isolated_margin_account(l_asset)["quoteAsset"]["free"]), 6))
+        s_usdt = str(bh.binance_floor(float(get_isolated_margin_account(s_asset)["quoteAsset"]["free"]), 6))
 
-#         self.client.transfer_isolated_margin_to_spot(asset='USDT', symbol=long, amount=l_usdt)
-#         self.client.transfer_isolated_margin_to_spot(asset='USDT', symbol=short, amount=s_usdt)
+        if float(l_usdt) > 0.1:
+            self.client.transfer_isolated_margin_to_spot(asset='USDT', symbol=long, amount=l_usdt)
+        if float(s_usdt) > 0.1:
+            self.client.transfer_isolated_margin_to_spot(asset='USDT', symbol=short, amount=s_usdt)
         print(f"Moved {long} {l_asset} to spot and {short} {s_asset} to spot")
         
     def update_client(self):

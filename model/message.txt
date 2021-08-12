@@ -1,0 +1,1 @@
+{"strategy": {"FETCELR": {"z": 1, "position": "long", "pct": 0.3, "a": 30, "b": 12, "a_price": 0.5, "b_price": 0.04}, "ARDRLSK": {"z": 1, "position": "long", "pct": 0.3, "a": 30, "b": 12, "a_price": 0.5, "b_price": 0.04}, "ABCDEF": {"z": 1, "position": "long", "pct": 0.3, "a": 30, "b": 12, "a_price": 0.5, "b_price": 0.04}}, "portfolio": {"usdt": 100, "total": 200}}

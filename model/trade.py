@@ -20,3 +20,8 @@ class Trade:
         self.liquidate = liquidate
         self.long = long
         self.short = short
+        
+    def to_json(self):
+        """returns trade as a dictionary"""
+        return {"to_trade":to_trade, "liquidate":liquidate, "long":long, "short":short}
+    

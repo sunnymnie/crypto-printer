@@ -22,6 +22,6 @@ class Trade:
         self.short = short
         
     def to_json(self):
-        """returns trade as a dictionary"""
-        return {"to_trade":to_trade, "liquidate":liquidate, "long":long, "short":short}
+        """returns trade as a dictionary if trade else None"""
+        return {"liquidate":liquidate, "long":long, "short":short} if self.to_trade else None
     

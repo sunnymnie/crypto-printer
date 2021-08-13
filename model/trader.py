@@ -1,5 +1,6 @@
 import binance_helpers as bh
 from binance.enums import * #https://github.com/sammchardy/python-binance/blob/master/binance/enums.py
+import messenger
 
 class Trader:
     
@@ -17,8 +18,8 @@ class Trader:
         
         usdt_amt = bh.binance_floor(0.99*usdt_amt, 6)
         
-#         self.client.transfer_spot_to_isolated_margin(asset='USDT', symbol=long, amount=str(usdt_amt))
-#         self.client.transfer_spot_to_isolated_margin(asset='USDT', symbol=short, amount=str(usdt_amt))
+        self.client.transfer_spot_to_isolated_margin(asset='USDT', symbol=long, amount=str(usdt_amt))
+        self.client.transfer_spot_to_isolated_margin(asset='USDT', symbol=short, amount=str(usdt_amt))
         
         l_dp = bh.get_decimal_place(self.client, long)
         s_dp = bh.get_decimal_place(self.client, short)
@@ -35,28 +36,29 @@ class Trader:
     def go_long(self, long, l_asset, amt):
         """goes long amt amount of long"""
         print(f"Trader: go_long {long} for amt {amt}")
-#         order = self.client.create_margin_order(
-#             symbol=long,
-#             side=SIDE_BUY,
-#             type=ORDER_TYPE_MARKET,
-#             quantity=amt,
-#             newOrderRespType = "FULL",
-#             isIsolated='TRUE')
-#         return order
+        order = self.client.create_margin_order(
+            symbol=long,
+            side=SIDE_BUY,
+            type=ORDER_TYPE_MARKET,
+            quantity=amt,
+            newOrderRespType = "FULL",
+            isIsolated='TRUE')
+        messenger.keep_track_of_order(order)
         print(f"Went long {long} for {str(amt)}")
     
     def go_short(self, short, s_asset, amt):
         """goes short amt amount of short"""
         print(f"Trader: go short {short} for amt {amt}")
-#         transaction = self.client.create_margin_loan(asset=s_asset, amount=str(amt), isIsolated='TRUE', symbol=short)
-#         order = self.client.create_margin_order(
-#             symbol=short,
-#             side=SIDE_SELL,
-#             type=ORDER_TYPE_MARKET,
-#             quantity=amt,
-#             newOrderRespType = "FULL",
-#             isIsolated='TRUE')
-#         return transaction, order
+        transaction = self.client.create_margin_loan(asset=s_asset, amount=str(amt), isIsolated='TRUE', symbol=short)
+        order = self.client.create_margin_order(
+            symbol=short,
+            side=SIDE_SELL,
+            type=ORDER_TYPE_MARKET,
+            quantity=amt,
+            newOrderRespType = "FULL",
+            isIsolated='TRUE')
+        messenger.keep_track_of_order(transaction)
+        messenger.keep_track_of_order(order)
         print(f"Went short {short} for {str(amt)}")
 
     
@@ -125,27 +127,27 @@ class Trader:
     def liquidate_long_position(self, pair, amt):
         """liquidate the long position"""
         print(f"Trader: liquidate long position for pair {pair}")
-#         order = self.client.create_margin_order(
-#             symbol=pair,
-#             side=SIDE_SELL,
-#             type=ORDER_TYPE_MARKET,
-#             quantity=amt,
-#             newOrderRespType = "FULL",
-#             isIsolated='TRUE')
-#         return order
+        order = self.client.create_margin_order(
+            symbol=pair,
+            side=SIDE_SELL,
+            type=ORDER_TYPE_MARKET,
+            quantity=amt,
+            newOrderRespType = "FULL",
+            isIsolated='TRUE')
+        messenger.keep_track_of_order(order)
         print(f"Liquidated long position: {pair} for {amt}")
             
     def liquidate_short_position(self, pair, asset, amt):
         """liquidates short position and repays loan"""
         print(f"Trader: liquidate short position for pair {pair}")
-#         order = self.client.create_margin_order(
-#             symbol=pair,
-#             side=SIDE_BUY,
-#             type=ORDER_TYPE_MARKET,
-#             quantity=amt,
-#             newOrderRespType = "FULL",
-#             isIsolated='TRUE')
-#         return order
+        order = self.client.create_margin_order(
+            symbol=pair,
+            side=SIDE_BUY,
+            type=ORDER_TYPE_MARKET,
+            quantity=amt,
+            newOrderRespType = "FULL",
+            isIsolated='TRUE')
+        messenger.keep_track_of_order(order)
         print(f"Liquidated short position: {pair} for {amt}")
         
     def repay_loan(self, short, s_asset):
@@ -156,7 +158,7 @@ class Trader:
         
         if float(rp)>0:
             transaction = self.client.repay_margin_loan(asset=s_asset, amount=rp, isIsolated='TRUE', symbol=short)
-            return transaction
+            messenger.keep_track_of_order(transaction)
     
             print(f"Repaid loan from {short} with asset {s_asset}")
         

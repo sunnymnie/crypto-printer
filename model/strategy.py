@@ -63,4 +63,6 @@ class Strategy:
         self.time_of_last_save_a = self.dl.save_df_fast(self.a, self.df_a, self.time_of_last_save_a)
         self.time_of_last_save_b = self.dl.save_df_fast(self.b, self.df_b, self.time_of_last_save_b)
         
-        
+    def to_json(self):
+        """returns strategy as a dictionary"""
+        return {"a":self.a, "b":self.b, "z":self.z}

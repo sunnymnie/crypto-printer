@@ -2,6 +2,7 @@ import binance_helpers as bh
 from trader import Trader
 from trade import Position, Trade
 from strategy import Strategy
+import messenger
 import schedule
 import time
 
@@ -48,9 +49,10 @@ class Model:
                 except ValueError as e:
                     print(f"STRAT IS TO-LOW")  
                     pass
-            print(f"ENDING STRATS LOOP FOR {strat.a} and {strat.b}")  
-                    
+                messenger.update_trade(trade.to_json())
+            print(f"ENDING STRATS LOOP FOR {strat.a} and {strat.b}") 
             strat.save_data()
+            messenger.save_strategy(strat.to_json())
             
     def turn_on(self):
         schedule.clear()
@@ -97,15 +99,17 @@ class Model:
             raise ValueError(f'Amount to trade ({trade_amt}) below minimum amount ({self.min_trade_amt})')
     
     def get_portfolio_value(self, ima, btc_price):
-        """gets the estimated net USDT value of entire portfolio given isolated margin accounts
+        """gets the estimated net USDT value of entire portfolio given isolated margin accounts AND
+        USDT amount in SPOT account
         REQUIRES: Quote asset in USDT"""
         print(f"Model: get_portfolio_value with btc_price {btc_price} with # of strats: {len(self.strats)}")
         value = 0
-        value += bh.get_usdt_balance(self.client)
+        usdt = bh.get_usdt_balance(self.client)
+        value += usdt
         for strat in self.strats:
             value += self.get_pair_value(ima, strat.a, btc_price)
             value += self.get_pair_value(ima, strat.b, btc_price)
-        return value
+        return value, usdt
 
     def get_pair_value(self, ima, pair:str, btc_price):
         """returns the total USDT value of the strat given pair. REQUIRES pair have USDT as quote. 
@@ -142,12 +146,16 @@ class Model:
         print(f"Model: get_position_and_max_trade_value")
         ima = self.client.get_isolated_margin_account()
         btc_price = bh.get_price(self.client, "BTCUSDT")
-        pv = self.get_portfolio_value(ima, btc_price)   #portfolio value
-        sv = self.get_pair_value(ima, strat.a, btc_price) + self.get_pair_value(ima, strat.b, btc_price) #Strat value
+        pv, usdt = self.get_portfolio_value(ima, btc_price)   #portfolio value
+        a_val = self.get_pair_value(ima, strat.a, btc_price)
+        b_val = self.get_pair_value(ima, strat.b, btc_price)
+        sv = a_val + b_val #Strat value
         print(f"MODEL: pv={pv}, sv={sv}")
         mta = (pv * strat.max_portfolio) - sv      #Max trade amount
+        
+        messenger.update_portfolio_value(pv, sv, usdt, strat.a, strat.b, a_val, b_val)
 
-        position = None
+        position = Position.NONE
 
         if self.is_short(ima, strat.a):
             if mta > self.min_trade_amt:
@@ -158,9 +166,7 @@ class Model:
             if mta > self.min_trade_amt:
                 position = Position.A_PARTIAL
             elif mta <= self.min_trade_amt:
-                position = Position.A
-        else:
-            position = Position.NONE
+                position = Position.A            
 
         return position, max(0, mta)
 

@@ -34,8 +34,7 @@ async def updater():
 async def portfolio(message):
     '''Returns current printer mode, which corresponds to printer refersh rate'''
     portfolio = messenger.get_message()["portfolio"]
-#     await message.channel.send(f"Current USDT: {str(round(portfolio['usdt'], 2))}, total: {str(round(portfolio['total'], 2))}")
-    await message.channel.send(f"test")
+    await message.channel.send(f"Current USDT: {str(round(portfolio['usdt'], 2))}, total: {str(round(portfolio['total'], 2))}")
     
 @bot.command()
 async def summary(message, strat=None):

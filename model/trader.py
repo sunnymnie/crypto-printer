@@ -121,7 +121,7 @@ class Trader:
             self.liquidate_short_position(short, s_asset, s_amt_base)
             
         self.repay_loan(short, s_asset)
-        self.move_money_to_spot(self, long, short, l_asset, s_asset)
+        self.move_money_to_spot(long, short, l_asset, s_asset)
 
         
     def liquidate_long_position(self, pair, amt):
@@ -154,7 +154,7 @@ class Trader:
         """repays loan"""
         print(f"Trader: repay loan for short {short}")
         
-        rp = str(abs(float(bh.get_margin_asset(self.client, short)["free"])))
+        rp = str(abs(float(bh.get_margin_asset(self.client, s_asset)["free"])))
         
         if float(rp)>0:
             transaction = self.client.repay_margin_loan(asset=s_asset, amount=rp, isIsolated='TRUE', symbol=short)
@@ -165,8 +165,8 @@ class Trader:
     def move_money_to_spot(self, long, short, l_asset, s_asset):
         """moves all money to spot. Assumes finished closing out of trade"""
         print(f"Trader: move_money_to_spot for long {long}, short{short}")
-        l_usdt = str(bh.binance_floor(float(get_isolated_margin_account(l_asset)["quoteAsset"]["free"]), 6))
-        s_usdt = str(bh.binance_floor(float(get_isolated_margin_account(s_asset)["quoteAsset"]["free"]), 6))
+        l_usdt = str(bh.binance_floor(float(bh.get_isolated_margin_account(self.client, l_asset)["quoteAsset"]["free"]), 6))
+        s_usdt = str(bh.binance_floor(float(bh.get_isolated_margin_account(self.client, s_asset)["quoteAsset"]["free"]), 6))
 
         if float(l_usdt) > 0.1:
             self.client.transfer_isolated_margin_to_spot(asset='USDT', symbol=long, amount=l_usdt)

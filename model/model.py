@@ -46,13 +46,12 @@ class Model:
                         max_long = bh.get_order_book(self.client, trade.long, self.max_slippage, False, True)
                         max_short = bh.get_order_book(self.client, trade.short, self.max_slippage, True, True)
                         trader.liquidate(trade.long, trade.short, max_long, max_short, self.min_trade_amt)
+                    messenger.update_trade(trade.to_json())
                 except ValueError as e:
                     print(f"STRAT IS TO-LOW")  
                     pass
-                messenger.update_trade(trade.to_json())
             print(f"ENDING STRATS LOOP FOR {strat.a} and {strat.b}") 
             strat.save_data()
-            messenger.save_strategy(strat.to_json())
             
     def turn_on(self):
         schedule.clear()
@@ -65,14 +64,15 @@ class Model:
             time.sleep(1)
 
               
-    def get_trade_amt(self, long, short, max_usdt_amt):
+    def get_trade_amt(self, long, short, max_usdt_amt, buffer=0.98):
         """max per-asset trade amount to have slippage within maximum slippage. 
-        If below minimum trade amount, throws exception"""
+        If below minimum trade amount, throws exception. 
+        Buffer is % of USDT balance to use. 98% defaults maximum usage of 98%"""
         print(f"Model: get_trade_amt for long:{long}, short{short}, max_usdt_amt:{max_usdt_amt}")
         print("============Trade amount calculation=================")
         mta = max_usdt_amt/2
         print(f"MODEL: mta = {mta}, max trade per side")
-        usdt_balance = bh.get_usdt_balance(self.client)/2
+        usdt_balance = (bh.get_usdt_balance(self.client)/2)*buffer
         print(f"MODEL: usdt = {usdt_balance}, max usdt available per side")
         max_long = bh.get_order_book(self.client, long, self.max_slippage, True, True)
         print(f"MODEL: max_long = {max_long}, max long {long} from orderbook")
@@ -153,7 +153,7 @@ class Model:
         print(f"MODEL: pv={pv}, sv={sv}")
         mta = (pv * strat.max_portfolio) - sv      #Max trade amount
         
-        messenger.update_portfolio_value(pv, sv, usdt, strat.a, strat.b, a_val, b_val)
+        messenger.update_portfolio_value(pv, usdt, strat.a, strat.b, a_val, b_val)
 
         position = Position.NONE
 

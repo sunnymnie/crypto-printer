@@ -20,10 +20,10 @@ def compute_adf_tests(pathname, hourpath, symbols, filename, lower=10000):
     for a in loc:
         print(f"Analyzing {a} ({i}/{length})")
         i += 1
+        df1 = pd.read_csv(hourpath + a + "-hour.csv", index_col=0, parse_dates=True)
+        if len(df1)<lower:
+            continue
         for b in loc[loc.index(a)+1:]:
-            df1 = pd.read_csv(hourpath + a + "-hour.csv", index_col=0, parse_dates=True)
-            if len(df1)<lower:
-                continue
             df2 = pd.read_csv(hourpath + b + "-hour.csv", index_col=0, parse_dates=True)
             if len(df2)<lower:
                 continue
@@ -44,5 +44,16 @@ def compute_adf_tests(pathname, hourpath, symbols, filename, lower=10000):
             halflife = -np.log(2) / regress_results.params['ylag']
             stats = stats.append({"A":a, "B":b, "t":coint_t, "p":pvalue, "h":halflife}, ignore_index=True)
         clear_output()
+    clear_output()
     stats.to_csv(pathname+filename, index=False)
     print(f"Operation took {round((time.time() - start)/60, 2)} minutes")
+    
+def filter_adf_tests(pathname, filename, new_filename, min_h=0, max_p=0.05, sort="p"):
+    """filters adf tests, removing BUSDUSDTs, and filtering h and p. Sort can be t, p, or h"""
+    stats = pd.read_csv(pathname + filename)
+    stats = stats[stats.A != "BUSDUSDT"]
+    stats = stats[stats.B != "BUSDUSDT"]
+    stats = stats[stats.h > min_h]
+    stats = stats[stats.p <= max_p]
+    stats = stats.sort_values(sort)
+    stats.to_csv(pathname+new_filename, index=False)

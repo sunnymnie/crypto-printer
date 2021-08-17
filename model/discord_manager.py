@@ -47,7 +47,22 @@ async def summary(message, strat=None):
     else:
         try:
             summary = m["strategy"][strat.upper()]
-            await message.channel.send(f"{strat} occupies {str(round(summary['pct']*100, 2))}% of portfolio, with asset worths {str(round(summary['a'], 2))} and {str(round(summary['b'], 2))}")
+            await message.channel.send(f"{strat.upper()} occupies {str(round(summary['pct']*100, 2))}% of portfolio, with asset worths {str(round(summary['a'], 2))} and {str(round(summary['b'], 2))}")
+        except:
+            await message.channel.send(f"No summary available for strat {strat}")
+            
+@bot.command()
+async def strat(message, strat=None):
+    """lists all the stats of strat"""
+    if strat is None:
+        await message.channel.send("Please enter a strategy")
+    else:
+        try:
+            stragegy = m["strategy"][strat.upper()]
+            string = ""
+            for k in strategy:
+                string += f"{k}: {strategy[k]}\n"
+            await message.channel.send(string)
         except:
             await message.channel.send(f"No summary available for strat {strat}")
             

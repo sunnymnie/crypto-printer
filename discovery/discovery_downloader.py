@@ -4,7 +4,44 @@ from binance.client import Client
 from datetime import datetime
 import json
 import time
+from requests import Request, Session
+from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 from IPython.display import clear_output
+
+def filter_by_cmc_rank(pathname, filename, cmc_rank=200):
+    """filters file to only contain assets above cmc_rank"""
+    df = pd.read_csv(pathname + filename, squeeze=True)
+    string = ""
+    for i in df:
+        string += "," + i[:-4]
+    string = string[1:]
+    url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
+    parameters = {
+        'symbol':string,
+        'skip_invalid':True
+    }
+    headers = {
+      'Accepts': 'application/json',
+      'X-CMC_PRO_API_KEY': get_api_keys("coinmarketcap", "api")
+    }
+    session = Session()
+    session.headers.update(headers)
+
+    try:
+        response = session.get(url, params=parameters)
+        data = json.loads(response.text)
+    except (ConnectionError, Timeout, TooManyRedirects) as e:
+        print(e)
+        
+    new = []
+    for i in df:
+        try:
+            if data["data"][i[:-4]]["cmc_rank"] < cmc_rank:
+                new.append(i)
+        except:
+            pass
+    pd.Series(new).to_csv(pathname + filename, index=False)
+    print(f"Successfully filtered {len(df)-len(new)} assets out, only {len(new)} remain")
 
 def download_all_minutely_data(restart, cont, pathname, minutepath, do, cdo):
     if restart == cont:

@@ -51,6 +51,7 @@ class Model:
                     print(f"STRAT IS TO-LOW")  
                     pass
             print(f"ENDING STRATS LOOP FOR {strat.a} and {strat.b}") 
+            messenger.update_strats(strat.a, strat.b, strat.z, strat.thres, strat.sell_thres, strat.max_portfolio)
             strat.save_data()
             
     def turn_on(self):

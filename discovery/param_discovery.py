@@ -46,46 +46,44 @@ def brute_force_search(restart, cont, pathname, adf, cadf, results):
                 print(f"Failure to read {a} or {b}, sleeping for 5 minutes")
                 time.sleep(300)
                 
-        try: 
+#         try: 
 
-            hedge_ratio, hr_index, df, df1, df2 = get_hedge_ratio_and_index(a, b)
+        hedge_ratio, hr_index, df, df1, df2 = get_hedge_ratio_and_index(a, b)
 
-            d = do_backtest_for_loop(a, b, hedge_ratio, hr_index, df, df1, df2,
-                                     [3000, 4000, 5000, 6000], [2., 3., 4.], [-0.5, 0, 0.5]) 
+        d = do_backtest_for_loop(a, b, hedge_ratio, hr_index, df, df1, df2,
+                                 [3000, 4000, 5000, 6000], [2., 3., 4.], [-0.5, 0, 0.5]) 
 
-            lookbacks, threses, sell_threses, preliminary_sharpe_df = get_best_sharpe_params(d)
+        lookbacks, threses, sell_threses, preliminary_sharpe_df = get_best_sharpe_params(d)
 
-            preliminary_sharpe_df.to_csv(f"../data/generated/backtests/{a}-{b}-sharpe.csv", index=False)
+        preliminary_sharpe_df.to_csv(f"../data/generated/backtests/{a}-{b}-sharpe.csv", index=False)
 
-            d = do_backtest_for_loop(a, b, hedge_ratio, hr_index, df, df1, df2, lookbacks, threses, sell_threses)
+        d = do_backtest_for_loop(a, b, hedge_ratio, hr_index, df, df1, df2, lookbacks, threses, sell_threses)
 
-            _, _, _, main_sharpe_df = get_best_sharpe_params(d)
+        _, _, _, main_sharpe_df = get_best_sharpe_params(d)
 
-            plot_results(main_sharpe_df, "backtest-graphs", a, b)
-            main_sharpe_df.to_csv(f"../data/generated/backtests/{a}-{b}-sharpe-narrowed.csv", index=False)
+        plot_results(main_sharpe_df, "backtest-graphs", a, b)
+        main_sharpe_df.to_csv(f"../data/generated/backtests/{a}-{b}-sharpe-narrowed.csv", index=False)
 
-            lookbacks = list(set(list(main_sharpe_df.lookback)))
-            threses = list(set(list(main_sharpe_df.thres)))
-            sell_threses = list(set(list(main_sharpe_df.sell_thres)))
+        lookbacks = list(set(list(main_sharpe_df.lookback)))
+        threses = list(set(list(main_sharpe_df.thres)))
+        sell_threses = list(set(list(main_sharpe_df.sell_thres)))
 
-            hedge_ratio, hr_index, df, df1, df2 = get_hedge_ratio_and_index(a, b, test_future=True)
-            d = do_backtest_for_loop(a, b, hedge_ratio, hr_index, df, df1, df2, lookbacks, threses, sell_threses, cutoff)
+        hedge_ratio, hr_index, df, df1, df2 = get_hedge_ratio_and_index(a, b, test_future=True)
+        d = do_backtest_for_loop(a, b, hedge_ratio, hr_index, df, df1, df2, lookbacks, threses, sell_threses, cutoff)
 
-            _, _, _, d = get_best_sharpe_params(d)
-            d = d.sort_values("sharpe", ascending=False)
-            plot_results(d, "forwardtest-graphs", a, b)
-            d.to_csv(f"../data/generated/forwardtests/{a}-{b}-forward-test.csv", index=False) 
+        _, _, _, d = get_best_sharpe_params(d)
+        d = d.sort_values("sharpe", ascending=False)
+        plot_results(d, "forwardtest-graphs", a, b)
+        d.to_csv(f"../data/generated/forwardtests/{a}-{b}-forward-test.csv", index=False) 
 
-            pair_results = update_pair_results(pair_results, a, b, d.iloc[0])
-    #         except:
-    #             pass
-        except:
-            try:
-                print(f"Error in processing {a} and {b}, kill kernal again to quit")
-                time.sleep(300)
-            except:
-                print(f"Successfully quit")
-                return
+        pair_results = update_pair_results(pair_results, a, b, d.iloc[0])
+#         except:
+#             try:
+#                 print(f"Error in processing {a} and {b}, kill kernal again to quit")
+#                 time.sleep(300)
+#             except:
+#                 print(f"Successfully quit")
+#                 return
         pair_results.to_csv(pathname + results, index=False)
         pair_results = pd.read_csv(pathname + results)
         pairs[1:].to_csv(pathname + cadf, index=False)
@@ -305,7 +303,7 @@ def get_best_sharpe_params(d):
     
     for _, row in results.iterrows():
         r = row['returns']
-        mxdd.append(max(row['drawdowns']))
+        mxdd.append(max(row['drawdowns']+[0]))
         sharpe.append(np.sqrt(len(r)) * np.nanmean(r) / np.nanstd(r))
         dd_filtered.append((row['mxdd'] > 2592000*2) and (min(r) < -0.2*2))
         winrate.append(sum(i > 0 for i in r)/len(r))
@@ -319,7 +317,9 @@ def get_best_sharpe_params(d):
     results['avg_winloss'] = avg_winloss
     results['trades'] = trades
 
-    results = results.sort_values(['dd_filtered', 'sharpe'], ignore_index=True)
+#     results = results.sort_values(['dd_filtered', 'sharpe'], ignore_index=True)
+    results = results.sort_values('sharpe', ascending=False, ignore_index=True)
+    
     top = results.head(3)
 
     lb = int(top['lookback'].mean())

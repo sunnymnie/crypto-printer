@@ -5,6 +5,7 @@ from strategy import Strategy
 import messenger
 import schedule
 import time
+import socket
 
 class Model:
     def __init__(self, strats, min_trade_amt=20, max_slippage=0.2):
@@ -44,23 +45,23 @@ class Model:
         schedule.clear()
         schedule.every().minute.at(":01").do(self.update)
         while True:
-#             try:
-            if schedule.get_jobs() != []:
-                schedule.run_pending()
-            else:
-                schedule.every().minute.at(":01").do(self.update)
-#             except Exception as e:
-#                 print(f"An error occured, sleeping for 2 minutes. Error: {e}")
-#                 rest = 120
-#                 schedule.clear()
-#                 while True:
-#                     time.sleep(rest)
-#                     try: 
-#                         schedule.every().minute.at(":01").do(self.update)
-#                         break
-#                     except:
-#                         print(f"Error again, sleeping an additional 10 seconds, to {rest + 10} seconds")
-#                         rest += 10
+            try:
+                if schedule.get_jobs() != []:
+                    schedule.run_pending()
+                else:
+                    schedule.every().minute.at(":01").do(self.update)
+            except socket.timeout:
+                rest = 120
+                print(f"Socket timeout, sleeping {rest} seconds")
+                schedule.clear()
+                while True:
+                    time.sleep(rest)
+                    try: 
+                        schedule.every().minute.at(":01").do(self.update)
+                        break
+                    except socket.timeout:
+                        print(f"Socket timeout again, sleeping an additional 10 seconds, to {rest + 10} seconds")
+                        rest += 10
             time.sleep(1)
 
               

@@ -54,11 +54,12 @@ async def summary(message, strat=None):
 @bot.command()
 async def strat(message, strat=None):
     """lists all the stats of strat"""
+    m = messenger.get_message()
     if strat is None:
         await message.channel.send("Please enter a strategy")
     else:
         try:
-            stragegy = m["strategy"][strat.upper()]
+            strategy = m["strategy"][strat.upper()]
             string = ""
             for k in strategy:
                 string += f"{k}: {strategy[k]}\n"

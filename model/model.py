@@ -37,12 +37,31 @@ class Model:
                     pass
             messenger.update_strats(strat.a, strat.b, strat.z, strat.thres, strat.sell_thres, strat.max_portfolio)
             strat.save_data()
+        return schedule.CancelJob
             
     def turn_on(self):
         schedule.clear()
         schedule.every().minute.at(":01").do(self.update)
         while True:
-            schedule.run_pending()
+            try:
+                if schedule.get_jobs() != []:
+                    print(f"Run schedule")
+                    schedule.run_pending()
+                else:
+                    print(f"Schedule is empty, setting it to run next minute")
+                    schedule.every().minute.at(":01").do(self.update)
+            except:
+                print("An error occured, sleeping for 2 minutes")
+                rest = 120
+                schedule.clear()
+                while True:
+                    time.sleep(rest)
+                    try: 
+                        schedule.every().minute.at(":01").do(self.update)
+                        break
+                    except:
+                        print(f"Error again, sleeping an additional 10 seconds, to {rest + 10} seconds")
+                        rest += 10
             time.sleep(1)
 
               

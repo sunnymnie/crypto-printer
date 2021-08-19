@@ -45,13 +45,11 @@ class Model:
         while True:
             try:
                 if schedule.get_jobs() != []:
-                    print(f"Run schedule")
                     schedule.run_pending()
                 else:
-                    print(f"Schedule is empty, setting it to run next minute")
                     schedule.every().minute.at(":01").do(self.update)
-            except:
-                print("An error occured, sleeping for 2 minutes")
+            except Exception as e:
+                print(f"An error occured, sleeping for 2 minutes. Error: {e}")
                 rest = 120
                 schedule.clear()
                 while True:

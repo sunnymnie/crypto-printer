@@ -22,13 +22,11 @@ class Strategy:
         
     def update_data(self):
         """updates df_a, and df_b"""
-        print(f"Strat: update_data")
         self.df_a = self.dl.update_data(self.a, self.df_a)
         self.df_b = self.dl.update_data(self.b, self.df_b)
         
     def consider_trading(self, p):
         """If trading opportunity, returns trade object, does not tell how much to trade"""
-        print(f"Strat: consider trading")
         self.update_data()
         self.z = self.m.get_z_score(self.df_a, self.df_b)
         trade = Trade(False)
@@ -41,7 +39,6 @@ class Strategy:
             
     def consider_long_short(self, p):
         """consider a long trade or a short trade"""
-        print(f"Strat: consider_long_short")
         if (self.z > self.thres) and (p == self.long.A_PARTIAL or p == self.long.NONE):
             return Trade(True, False, self.a, self.b)
         elif (self.z < -self.thres) and (p == self.long.B_PARTIAL or p == self.long.NONE):
@@ -49,7 +46,6 @@ class Strategy:
         return Trade(False)
     
     def consider_liquidating(self, p):
-        print(f"Strat: consider_liquidating")
         if (self.z < -self.sell_thres) and (p == self.long.A or p == self.long.A_PARTIAL):
             return Trade(True, True, self.a, self.b)
         elif (self.z > self.sell_thres) and (p == self.long.B or p == self.long.B_PARTIAL):
@@ -59,11 +55,5 @@ class Strategy:
         
     def save_data(self):
         """saves dfs and sets time of last save"""
-        print(f"Strat: save_data, with last save {self.time_of_last_save_a}")
         self.time_of_last_save_a = self.dl.save_df_fast(self.a, self.df_a, self.time_of_last_save_a)
         self.time_of_last_save_b = self.dl.save_df_fast(self.b, self.df_b, self.time_of_last_save_b)
-        
-#     def to_json(self):
-#         """returns strategy as a dictionary"""
-#         return {"a":self.a, "b":self.b, "z":self.z, "thres":self.thres, 
-#                 "sell_thres":self.sell_thres, "max":self.max_portfolio}

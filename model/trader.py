@@ -10,8 +10,6 @@ class Trader:
         
     def go_long_short(self, long, short, usdt_amt):
         """places a market order to go long and takes a loan to go short"""
-        print(f"Trader: go_long_short with long: {long}, short: {short}, usdt_amt: {usdt_amt}")
-        # implementation
         
         l_asset = long[:-4]
         s_asset = short[:-4]
@@ -35,7 +33,6 @@ class Trader:
         
     def go_long(self, long, l_asset, amt):
         """goes long amt amount of long"""
-        print(f"Trader: go_long {long} for amt {amt}")
         order = self.client.create_margin_order(
             symbol=long,
             side=SIDE_BUY,
@@ -44,11 +41,9 @@ class Trader:
             newOrderRespType = "FULL",
             isIsolated='TRUE')
         messenger.keep_track_of_order(order)
-        print(f"Went long {long} for {str(amt)}")
     
     def go_short(self, short, s_asset, amt):
         """goes short amt amount of short"""
-        print(f"Trader: go short {short} for amt {amt}")
         transaction = self.client.create_margin_loan(asset=s_asset, amount=str(amt), isIsolated='TRUE', symbol=short)
         order = self.client.create_margin_order(
             symbol=short,
@@ -59,15 +54,12 @@ class Trader:
             isIsolated='TRUE')
         messenger.keep_track_of_order(transaction)
         messenger.keep_track_of_order(order)
-        print(f"Went short {short} for {str(amt)}")
-
     
         
     def liquidate(self, long, short, max_long, max_short, min_trade_amt):
         """liquidates current long and short position but under max_usdt_amt. If remaining 
         short position or long position is less than min_trade_amt, liquidate function ignores max_usdt_amt
         and liquidates all"""
-        print(f"Trader: liquidate long {long}, short {short}")
         l_asset = long[:-4]
         s_asset = short[:-4]
         
@@ -126,7 +118,6 @@ class Trader:
         
     def liquidate_long_position(self, pair, amt):
         """liquidate the long position"""
-        print(f"Trader: liquidate long position for pair {pair}")
         order = self.client.create_margin_order(
             symbol=pair,
             side=SIDE_SELL,
@@ -135,11 +126,9 @@ class Trader:
             newOrderRespType = "FULL",
             isIsolated='TRUE')
         messenger.keep_track_of_order(order)
-        print(f"Liquidated long position: {pair} for {amt}")
             
     def liquidate_short_position(self, pair, asset, amt):
         """liquidates short position and repays loan"""
-        print(f"Trader: liquidate short position for pair {pair}")
         order = self.client.create_margin_order(
             symbol=pair,
             side=SIDE_BUY,
@@ -148,23 +137,17 @@ class Trader:
             newOrderRespType = "FULL",
             isIsolated='TRUE')
         messenger.keep_track_of_order(order)
-        print(f"Liquidated short position: {pair} for {amt}")
         
     def repay_loan(self, short, s_asset):
-        """repays loan"""
-        print(f"Trader: repay loan for short {short}")
-        
+        """repays loan"""        
         rp = str(abs(float(bh.get_margin_asset(self.client, s_asset)["free"])))
         
         if float(rp)>0:
             transaction = self.client.repay_margin_loan(asset=s_asset, amount=rp, isIsolated='TRUE', symbol=short)
             messenger.keep_track_of_order(transaction)
-    
-            print(f"Repaid loan from {short} with asset {s_asset}")
-        
+            
     def move_money_to_spot(self, long, short, l_asset, s_asset):
         """moves all money to spot. Assumes finished closing out of trade"""
-        print(f"Trader: move_money_to_spot for long {long}, short{short}")
         l_usdt = str(bh.binance_floor(float(bh.get_isolated_margin_account(self.client, l_asset)["quoteAsset"]["free"]), 6))
         s_usdt = str(bh.binance_floor(float(bh.get_isolated_margin_account(self.client, s_asset)["quoteAsset"]["free"]), 6))
 
@@ -172,7 +155,6 @@ class Trader:
             self.client.transfer_isolated_margin_to_spot(asset='USDT', symbol=long, amount=l_usdt)
         if float(s_usdt) > 0.1:
             self.client.transfer_isolated_margin_to_spot(asset='USDT', symbol=short, amount=s_usdt)
-        print(f"Moved {long} {l_asset} to spot and {short} {s_asset} to spot")
         
     def update_client(self):
         self.client = bh.new_binance_client()

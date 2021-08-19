@@ -15,7 +15,6 @@ class Downloader:
     def get_minutely_data(self, pair:str, past=True):
         """smartly downloads and returns minutely data. Enter pair with USDT. If past, returns what is saved,
         else also updates it (without saving) and returns it"""
-        print(f"DL: get_minutely_data for pair:{pair}")
         
         df_past = self.get_past_bars(pair)
 
@@ -23,9 +22,7 @@ class Downloader:
         
 
     def update_data(self, pair:str, df_past):
-        """smartly updates and returns minutely data. Enter pair with USDT"""
-        print(f"DL: update_data for pair:{pair}")
-        
+        """smartly updates and returns minutely data. Enter pair with USDT"""        
         df_now = self.binance_download(pair, df_past.iloc[-1].timestamp)
         
         df = df_past[df_past.timestamp < df_now.iloc[0].timestamp]
@@ -35,7 +32,6 @@ class Downloader:
         
     def get_past_bars(self, pair):
         """returns downloaded data if it exists, else downloads and returns"""
-        print(f"DL: get_past_bars for pair:{pair}")
         try:
             return self.read_df(pair)
         except:
@@ -49,7 +45,6 @@ class Downloader:
         pair: BTCUSDT
         start: float date. Leave as is for from the very beginning (2001). 
         """
-        print(f"DL: binance_download for {pair} and start {start}")
         self.client = bh.new_binance_client()
         start_date = self.get_str_date(self.get_date_from_int(start))
         klines = self.client.get_historical_klines(pair, self.client.KLINE_INTERVAL_1MINUTE, start_date, limit=1000)
@@ -58,7 +53,6 @@ class Downloader:
         
     def get_filtered_dataframe(self, klines):
         """filters columns and converts columns to floats and ints respectively"""
-        print(f"DL: get_filtered_dataframe")
         df = pd.DataFrame(klines, columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_av', 'trades', 'tb_base_av', 'tb_quote_av', 'ignore'])
         df = df[['timestamp', 'open']]
         df = df.astype(np.float64)
@@ -75,19 +69,16 @@ class Downloader:
     
     def save_df(self, df, pair):
         """saves the dataframe"""
-        print(f"DL: save_df for {pair}")
         df.to_csv(f"{self.PATH + pair}-past.csv", index=False)
 
     def save_df_fast(self, pair, df, timestamp, buffer=10):
         """update saved df by writing only what it is missing minus buffer minutes"""
-        print(f"DL: save_df_fast for {pair} with timestamp {timestamp}, latest df timestamp {df.iloc[-1].timestamp}")
         df = df[df.timestamp > timestamp]
         df[:-buffer].to_csv(f"{self.PATH + pair}-past.csv", mode='a', header=False, index=False)
 
         
     def read_df(self, pair):
         """reads the dataframe"""
-        print(f"DL: read_df for {pair}")
         return pd.read_csv(f"{self.PATH + pair}-past.csv")
 
 

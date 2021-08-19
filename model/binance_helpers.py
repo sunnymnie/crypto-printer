@@ -6,7 +6,6 @@ from keys import key
 
 def get_order_book(client, pair:str, percent:float, buy:bool, usdt:bool):
     """Enter percent as .1 for 0.1%"""
-    print(f"BH: Getting orderbook for {pair}")
     ob = client.get_order_book(symbol=pair)
     bid = float(ob["bids"][0][0]) # Gets price of first bid
     ask = float(ob["asks"][0][0]) # Gets price of first ask (higher in price)

@@ -43,23 +43,23 @@ class Model:
         schedule.clear()
         schedule.every().minute.at(":01").do(self.update)
         while True:
-            try:
-                if schedule.get_jobs() != []:
-                    schedule.run_pending()
-                else:
-                    schedule.every().minute.at(":01").do(self.update)
-            except Exception as e:
-                print(f"An error occured, sleeping for 2 minutes. Error: {e}")
-                rest = 120
-                schedule.clear()
-                while True:
-                    time.sleep(rest)
-                    try: 
-                        schedule.every().minute.at(":01").do(self.update)
-                        break
-                    except:
-                        print(f"Error again, sleeping an additional 10 seconds, to {rest + 10} seconds")
-                        rest += 10
+#             try:
+            if schedule.get_jobs() != []:
+                schedule.run_pending()
+            else:
+                schedule.every().minute.at(":01").do(self.update)
+#             except Exception as e:
+#                 print(f"An error occured, sleeping for 2 minutes. Error: {e}")
+#                 rest = 120
+#                 schedule.clear()
+#                 while True:
+#                     time.sleep(rest)
+#                     try: 
+#                         schedule.every().minute.at(":01").do(self.update)
+#                         break
+#                     except:
+#                         print(f"Error again, sleeping an additional 10 seconds, to {rest + 10} seconds")
+#                         rest += 10
             time.sleep(1)
 
               

@@ -38,7 +38,7 @@ async def portfolio(message):
     
 @bot.command()
 async def summary(message, strat=None):
-    """Plots analysis"""
+    """Gives summary of all positions"""
     m = messenger.get_message()
     if strat is None:
         for strat in m["strategy"]:
@@ -66,6 +66,15 @@ async def strat(message, strat=None):
             await message.channel.send(string)
         except:
             await message.channel.send(f"No summary available for strat {strat}")
+            
+@bot.command()
+async def last_update(message):
+    """returns time of last printer update"""
+    m = messenger.get_message()
+    try:
+        await message.channel.send(m["last_update"])
+    except:
+        await message.channel.send("Model never ran before")
             
 
 @updater.before_loop

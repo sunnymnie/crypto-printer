@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+from datetime import datetime
 
 MESSAGE = 'message.txt'
 HISTORY = 'history.txt'
@@ -21,7 +22,13 @@ def save_json(file, filename):
     """saves json file"""
     with open(filename, 'w') as outfile:
         json.dump(file, outfile)
-
+        
+def update_time(time):
+    """saves the time to last_update on file"""
+    message = open_json(MESSAGE)
+    message["last_update"] = datetime.fromtimestamp(time).strftime("%d %B, %H:%M:%S")
+    save_json(message, MESSAGE)
+    
 def update_trade(trade):
     """saves trade to message.txt for discord manager to post"""
     message = open_json(MESSAGE)

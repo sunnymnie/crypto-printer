@@ -37,6 +37,7 @@ class Model:
                     pass
             messenger.update_strats(strat.a, strat.b, strat.z, strat.thres, strat.sell_thres, strat.max_portfolio)
             strat.save_data()
+            messenger.update_time(time.time())
         return schedule.CancelJob
             
     def turn_on(self):
@@ -60,6 +61,7 @@ class Model:
 #                     except:
 #                         print(f"Error again, sleeping an additional 10 seconds, to {rest + 10} seconds")
 #                         rest += 10
+            print("sleeping")
             time.sleep(1)
 
               

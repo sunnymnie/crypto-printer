@@ -1,11 +1,10 @@
 import discord
 from discord.ext import tasks, commands
-from datetime import datetime
 import json
 import messenger
 from keys import key
 
-bot = commands.Bot(command_prefix="-")
+bot = commands.Bot(command_prefix="")
 
     
 @bot.event
@@ -18,7 +17,6 @@ async def on_ready():
 async def updater():
     noti = bot.get_channel(853110820611555328)
     announcements = bot.get_channel(864949029623169044)
-#     await channel.send(str(datetime.today()))
     message = messenger.get_message()
     if len(message["trades"])>0:
         try:
@@ -68,7 +66,17 @@ async def strat(message, strat=None):
             await message.channel.send(f"No summary available for strat {strat}")
             
 @bot.command()
-async def last_update(message):
+async def z(message):
+    """lists the z-scores of all strats"""
+    m = messenger.get_message()
+    string = ""
+    for strat in m["strategy"]:
+        z = m["strategy"][strat]["z"]
+        string += f"{strat}: {round(z, 2)}\n"
+    await message.channel.send(string)
+            
+@bot.command()
+async def status(message):
     """returns time of last printer update"""
     m = messenger.get_message()
     try:

@@ -61,7 +61,6 @@ class Model:
 #                     except:
 #                         print(f"Error again, sleeping an additional 10 seconds, to {rest + 10} seconds")
 #                         rest += 10
-            print("sleeping")
             time.sleep(1)
 
               

@@ -19,25 +19,27 @@ class Model:
         """run and forget"""
         trader = Trader() #Need to init a new one because binance client 'expires'
         self.client = bh.new_binance_client()
-                
-        for strat in self.strats:
-            p, max_usdt_amt = self.get_position_and_max_trade_value(strat)
-            trade = strat.consider_trading(p)
-            if trade.to_trade:
-                try:
-                    if not trade.liquidate: #buy or sell
-                        trade_amt = self.get_trade_amt(trade.long, trade.short, max_usdt_amt)
-                        trader.go_long_short(trade.long, trade.short, trade_amt)
-                    else: #liquidate
-                        max_long = bh.get_order_book(self.client, trade.long, self.max_slippage, False, True)
-                        max_short = bh.get_order_book(self.client, trade.short, self.max_slippage, True, True)
-                        trader.liquidate(trade.long, trade.short, max_long, max_short, self.min_trade_amt)
-                    messenger.update_trade(trade.to_json())
-                except ValueError as e:
-                    pass
-            messenger.update_strats(strat.a, strat.b, strat.z, strat.thres, strat.sell_thres, strat.max_portfolio)
-            strat.save_data()
-            messenger.update_time(time.time())
+        try:
+            for strat in self.strats:
+                p, max_usdt_amt = self.get_position_and_max_trade_value(strat)
+                trade = strat.consider_trading(p)
+                if trade.to_trade:
+                    try:
+                        if not trade.liquidate: #buy or sell
+                            trade_amt = self.get_trade_amt(trade.long, trade.short, max_usdt_amt)
+                            trader.go_long_short(trade.long, trade.short, trade_amt)
+                        else: #liquidate
+                            max_long = bh.get_order_book(self.client, trade.long, self.max_slippage, False, True)
+                            max_short = bh.get_order_book(self.client, trade.short, self.max_slippage, True, True)
+                            trader.liquidate(trade.long, trade.short, max_long, max_short, self.min_trade_amt)
+                        messenger.update_trade(trade.to_json())
+                    except ValueError as e:
+                        pass
+                messenger.update_strats(strat.a, strat.b, strat.z, strat.thres, strat.sell_thres, strat.max_portfolio)
+                strat.save_data()
+                messenger.update_time(time.time())
+            except Exception as e:
+                print(f"ERROR: {e}")
         return schedule.CancelJob
             
     def turn_on(self):

@@ -8,7 +8,7 @@ import time
 import socket
 
 class Model:
-    def __init__(self, strats, min_trade_amt=20, max_slippage=0.2):
+    def __init__(self, strats, min_trade_amt=11, max_slippage=0.2):
         """inits a Model with a list of strategies, minimum trade amount in USDT, and max slippage in %"""
         self.strats = strats #sorted with priority, strats[0] highest priority
         self.min_trade_amt = min_trade_amt
@@ -28,7 +28,6 @@ class Model:
                     if not trade.liquidate: #buy or sell
                         trade_amt = self.get_trade_amt(trade.long, trade.short, max_usdt_amt)
                         trader.go_long_short(trade.long, trade.short, trade_amt)
-                        
                     else: #liquidate
                         max_long = bh.get_order_book(self.client, trade.long, self.max_slippage, False, True)
                         max_short = bh.get_order_book(self.client, trade.short, self.max_slippage, True, True)

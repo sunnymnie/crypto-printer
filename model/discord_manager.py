@@ -14,19 +14,22 @@ async def on_ready():
 
 @tasks.loop(seconds=60)
 async def updater():
-    noti = bot.get_channel(853110820611555328)
-    announcements = bot.get_channel(864949029623169044)
-    message = messenger.get_message()
+    try:
+        noti = bot.get_channel(853110820611555328)
+        announcements = bot.get_channel(864949029623169044)
+        message = messenger.get_message()
 
-    if len(message["trades"])>0:
-        try:
-            for trade in message["trades"]:
-                action = "Liquidate" if trade["liquidate"] else "Trade"
-                await announcements.send(f"{action} long position: {trade['long']}, and short position {trade['short']}")
-                message["trades"] = []
-                messenger.save_message(message)
-        except:
-            await announcements.send("Action performed but is corrupted")
+        if len(message["trades"])>0:
+            try:
+                for trade in message["trades"]:
+                    action = "Liquidate" if trade["liquidate"] else "Trade"
+                    await announcements.send(f"{action} long position: {trade['long']}, and short position {trade['short']}")
+                    message["trades"] = []
+                    messenger.save_message(message)
+            except:
+                await announcements.send("Action performed but is corrupted")
+    except:
+        pass
 
 @bot.command()
 async def portfolio(message):

@@ -5,7 +5,6 @@ import messenger
 from keys import key
 
 bot = commands.Bot(command_prefix="")
-
     
 @bot.event
 async def on_ready():
@@ -18,21 +17,23 @@ async def updater():
     noti = bot.get_channel(853110820611555328)
     announcements = bot.get_channel(864949029623169044)
     message = messenger.get_message()
+
     if len(message["trades"])>0:
         try:
             for trade in message["trades"]:
                 action = "Liquidate" if trade["liquidate"] else "Trade"
                 await announcements.send(f"{action} long position: {trade['long']}, and short position {trade['short']}")
+                message["trades"] = []
+                messenger.save_message(message)
         except:
             await announcements.send("Action performed but is corrupted")
-        message["trades"] = []
-        messenger.save_message(message)
 
 @bot.command()
 async def portfolio(message):
     '''returns portfolio worth'''
     portfolio = messenger.get_message()["portfolio"]
     await message.channel.send(f"Current USDT: {str(round(portfolio['usdt'], 2))}, total: {str(round(portfolio['total'], 2))}")
+    start()
     
 @bot.command()
 async def summary(message, strat=None):
@@ -48,6 +49,7 @@ async def summary(message, strat=None):
             await message.channel.send(f"{strat.upper()} occupies {str(round(summary['pct']*100, 2))}% of portfolio, with asset worths {str(round(summary['a'], 2))} and {str(round(summary['b'], 2))}")
         except:
             await message.channel.send(f"No summary available for strat {strat}")
+    start()
             
 @bot.command()
 async def strat(message, strat=None):
@@ -64,6 +66,7 @@ async def strat(message, strat=None):
             await message.channel.send(string)
         except:
             await message.channel.send(f"No summary available for strat {strat}")
+    start()
             
 @bot.command()
 async def z(message):
@@ -74,6 +77,7 @@ async def z(message):
         z = m["strategy"][strat]["z"]
         string += f"{strat}: {round(z, 2)}\n"
     await message.channel.send(string)
+    start()
             
 @bot.command()
 async def status(message):
@@ -83,7 +87,21 @@ async def status(message):
         await message.channel.send(m["last_update"])
     except:
         await message.channel.send("Model never ran before")
-            
+    start()
+        
+def start():
+    """attempts to start loop"""
+    try:
+        updater.start()
+        print("Restart loop")
+    except:
+        pass
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        return
+    raise error
 
 @updater.before_loop
 async def before():

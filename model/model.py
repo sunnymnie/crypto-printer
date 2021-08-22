@@ -38,8 +38,8 @@ class Model:
                 messenger.update_strats(strat.a, strat.b, strat.z, strat.thres, strat.sell_thres, strat.max_portfolio)
                 strat.save_data()
                 messenger.update_time(time.time())
-            except Exception as e:
-                print(f"ERROR: {e}")
+        except Exception as e:
+            print(f"ERROR: {e}")
         return schedule.CancelJob
             
     def turn_on(self):

@@ -57,8 +57,8 @@ class Model:
             except socket.timeout:
                 rest = 120
                 print(f"Socket timeout, sleeping {rest} seconds")
-                schedule.clear()
                 while True:
+                    schedule.clear()
                     time.sleep(rest)
                     try: 
                         schedule.every().minute.at(":01").do(self.update)
